@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditDispensers));
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabDispensers = new System.Windows.Forms.TabPage();
             this.kryptonGroupBox1 = new Krypton.Toolkit.KryptonGroupBox();
@@ -59,8 +59,14 @@
             this.btnAddUser = new Krypton.Toolkit.KryptonButton();
             this.usersGridView = new Krypton.Toolkit.KryptonDataGridView();
             this.tabStatistics = new System.Windows.Forms.TabPage();
-            this.statsGridView = new Krypton.Toolkit.KryptonDataGridView();
             this.usageChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.statsGridView = new Krypton.Toolkit.KryptonDataGridView();
+            this.kryptonPanel1 = new Krypton.Toolkit.KryptonPanel();
+            this.btnFilter = new Krypton.Toolkit.KryptonButton();
+            this.dtpStart = new Krypton.Toolkit.KryptonDateTimePicker();
+            this.kryptonLabel7 = new Krypton.Toolkit.KryptonLabel();
+            this.dtpEnd = new Krypton.Toolkit.KryptonDateTimePicker();
+            this.kryptonLabel8 = new Krypton.Toolkit.KryptonLabel();
             this.tabControl1.SuspendLayout();
             this.tabDispensers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonGroupBox1)).BeginInit();
@@ -77,8 +83,10 @@
             this.kryptonGroupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.usersGridView)).BeginInit();
             this.tabStatistics.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.usageChart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.kryptonPanel1)).BeginInit();
+            this.kryptonPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -403,6 +411,7 @@
             // 
             this.tabStatistics.Controls.Add(this.usageChart);
             this.tabStatistics.Controls.Add(this.statsGridView);
+            this.tabStatistics.Controls.Add(this.kryptonPanel1);
             this.tabStatistics.Location = new System.Drawing.Point(4, 33);
             this.tabStatistics.Name = "tabStatistics";
             this.tabStatistics.Padding = new System.Windows.Forms.Padding(3);
@@ -411,36 +420,97 @@
             this.tabStatistics.Text = "Statistics";
             this.tabStatistics.UseVisualStyleBackColor = true;
             // 
+            // usageChart
+            // 
+            this.usageChart.BackColor = System.Drawing.Color.GhostWhite;
+            this.usageChart.BorderlineColor = System.Drawing.Color.RoyalBlue;
+            chartArea1.Name = "ChartArea1";
+            this.usageChart.ChartAreas.Add(chartArea1);
+            this.usageChart.Dock = System.Windows.Forms.DockStyle.Left;
+            this.usageChart.Location = new System.Drawing.Point(3, 3);
+            this.usageChart.Name = "usageChart";
+            series1.ChartArea = "ChartArea1";
+            series1.Name = "Series1";
+            this.usageChart.Series.Add(series1);
+            this.usageChart.Size = new System.Drawing.Size(658, 311);
+            this.usageChart.TabIndex = 1;
+            this.usageChart.Text = "chart1";
+            // 
             // statsGridView
             // 
             this.statsGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.statsGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.statsGridView.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.statsGridView.Location = new System.Drawing.Point(3, 259);
+            this.statsGridView.Location = new System.Drawing.Point(3, 314);
             this.statsGridView.Name = "statsGridView";
             this.statsGridView.RowHeadersWidth = 51;
             this.statsGridView.RowTemplate.Height = 24;
-            this.statsGridView.Size = new System.Drawing.Size(1053, 255);
+            this.statsGridView.Size = new System.Drawing.Size(1053, 200);
             this.statsGridView.TabIndex = 0;
             // 
-            // usageChart
+            // kryptonPanel1
             // 
-            this.usageChart.BackColor = System.Drawing.Color.Navy;
-            this.usageChart.BorderlineColor = System.Drawing.Color.RoyalBlue;
-            chartArea1.Name = "ChartArea1";
-            this.usageChart.ChartAreas.Add(chartArea1);
-            this.usageChart.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Name = "Legend1";
-            this.usageChart.Legends.Add(legend1);
-            this.usageChart.Location = new System.Drawing.Point(3, 3);
-            this.usageChart.Name = "usageChart";
-            series1.ChartArea = "ChartArea1";
-            series1.Legend = "Legend1";
-            series1.Name = "Series1";
-            this.usageChart.Series.Add(series1);
-            this.usageChart.Size = new System.Drawing.Size(1053, 256);
-            this.usageChart.TabIndex = 1;
-            this.usageChart.Text = "chart1";
+            this.kryptonPanel1.Controls.Add(this.btnFilter);
+            this.kryptonPanel1.Controls.Add(this.dtpStart);
+            this.kryptonPanel1.Controls.Add(this.kryptonLabel7);
+            this.kryptonPanel1.Controls.Add(this.dtpEnd);
+            this.kryptonPanel1.Controls.Add(this.kryptonLabel8);
+            this.kryptonPanel1.Location = new System.Drawing.Point(614, 3);
+            this.kryptonPanel1.Name = "kryptonPanel1";
+            this.kryptonPanel1.Size = new System.Drawing.Size(442, 311);
+            this.kryptonPanel1.TabIndex = 7;
+            // 
+            // btnFilter
+            // 
+            this.btnFilter.Location = new System.Drawing.Point(143, 152);
+            this.btnFilter.Name = "btnFilter";
+            this.btnFilter.Size = new System.Drawing.Size(142, 38);
+            this.btnFilter.StateCommon.Content.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnFilter.TabIndex = 6;
+            this.btnFilter.Values.DropDownArrowColor = System.Drawing.Color.Empty;
+            this.btnFilter.Values.Text = "Filter statistics";
+            this.btnFilter.Click += new System.EventHandler(this.kryptonButton1_Click);
+            // 
+            // dtpStart
+            // 
+            this.dtpStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpStart.Location = new System.Drawing.Point(203, 48);
+            this.dtpStart.Name = "dtpStart";
+            this.dtpStart.Size = new System.Drawing.Size(121, 27);
+            this.dtpStart.StateCommon.Content.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dtpStart.TabIndex = 2;
+            // 
+            // kryptonLabel7
+            // 
+            this.kryptonLabel7.AutoSize = false;
+            this.kryptonLabel7.Location = new System.Drawing.Point(94, 48);
+            this.kryptonLabel7.Name = "kryptonLabel7";
+            this.kryptonLabel7.Size = new System.Drawing.Size(120, 25);
+            this.kryptonLabel7.StateCommon.ShortText.Color2 = System.Drawing.Color.Transparent;
+            this.kryptonLabel7.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel7.TabIndex = 4;
+            this.kryptonLabel7.Values.Text = "Start date:";
+            // 
+            // dtpEnd
+            // 
+            this.dtpEnd.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpEnd.Location = new System.Drawing.Point(203, 91);
+            this.dtpEnd.Name = "dtpEnd";
+            this.dtpEnd.Size = new System.Drawing.Size(121, 27);
+            this.dtpEnd.StateCommon.Content.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dtpEnd.TabIndex = 3;
+            // 
+            // kryptonLabel8
+            // 
+            this.kryptonLabel8.AutoSize = false;
+            this.kryptonLabel8.Location = new System.Drawing.Point(99, 91);
+            this.kryptonLabel8.Name = "kryptonLabel8";
+            this.kryptonLabel8.Size = new System.Drawing.Size(115, 25);
+            this.kryptonLabel8.StateCommon.ShortText.Color2 = System.Drawing.Color.Transparent;
+            this.kryptonLabel8.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel8.TabIndex = 5;
+            this.kryptonLabel8.Values.Text = "End date:";
+            this.kryptonLabel8.Click += new System.EventHandler(this.kryptonLabel8_Click);
             // 
             // EditDispensers
             // 
@@ -448,8 +518,10 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1067, 554);
             this.Controls.Add(this.tabControl1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "EditDispensers";
-            this.Text = "EditDispensers";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Edit Dispensers";
             this.Load += new System.EventHandler(this.EditDispensers_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabDispensers.ResumeLayout(false);
@@ -469,8 +541,10 @@
             this.kryptonGroupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.usersGridView)).EndInit();
             this.tabStatistics.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.usageChart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.kryptonPanel1)).EndInit();
+            this.kryptonPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -507,5 +581,11 @@
         private System.Windows.Forms.TabPage tabStatistics;
         private Krypton.Toolkit.KryptonDataGridView statsGridView;
         private System.Windows.Forms.DataVisualization.Charting.Chart usageChart;
+        private Krypton.Toolkit.KryptonLabel kryptonLabel8;
+        private Krypton.Toolkit.KryptonLabel kryptonLabel7;
+        private Krypton.Toolkit.KryptonDateTimePicker dtpEnd;
+        private Krypton.Toolkit.KryptonDateTimePicker dtpStart;
+        private Krypton.Toolkit.KryptonButton btnFilter;
+        private Krypton.Toolkit.KryptonPanel kryptonPanel1;
     }
 }

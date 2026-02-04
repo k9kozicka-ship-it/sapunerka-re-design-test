@@ -29,11 +29,13 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NormalUser));
             this.UserNameLbl = new Krypton.Toolkit.KryptonLabel();
             this.Floor_label = new Krypton.Toolkit.KryptonLabel();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.mainPanel = new Krypton.Toolkit.KryptonPanel();
             ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).BeginInit();
+            this.mainPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // UserNameLbl
@@ -47,7 +49,7 @@
             // 
             // Floor_label
             // 
-            this.Floor_label.Location = new System.Drawing.Point(0, 176);
+            this.Floor_label.Location = new System.Drawing.Point(0, 178);
             this.Floor_label.Name = "Floor_label";
             this.Floor_label.Size = new System.Drawing.Size(99, 31);
             this.Floor_label.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -61,6 +63,8 @@
             // 
             // mainPanel
             // 
+            this.mainPanel.AutoScroll = true;
+            this.mainPanel.Controls.Add(this.Floor_label);
             this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.mainPanel.Location = new System.Drawing.Point(0, 0);
             this.mainPanel.Name = "mainPanel";
@@ -72,13 +76,16 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1067, 554);
-            this.Controls.Add(this.Floor_label);
             this.Controls.Add(this.UserNameLbl);
             this.Controls.Add(this.mainPanel);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "NormalUser";
-            this.Text = "NormalUser";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Normal User";
             this.Load += new System.EventHandler(this.NormalUser_Load);
             ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).EndInit();
+            this.mainPanel.ResumeLayout(false);
+            this.mainPanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 

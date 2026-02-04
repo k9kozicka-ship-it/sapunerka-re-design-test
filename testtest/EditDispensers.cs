@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting; // Required for Graphs
+using System.Windows.Forms.DataVisualization.Charting; 
 using MySqlConnector;
 
 namespace testtest
@@ -27,24 +27,31 @@ namespace testtest
             {
                 conn = new MySqlConnection(connectionString);
                 conn.Open();
+
+                
+                dtpStart.Value = DateTime.Now.Date;
+                dtpEnd.Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
+
+                ConfigureGrid(dispensersGridView);
+                ConfigureGrid(usersGridView);
+                ConfigureGrid(statsGridView);
+
+                
+                dispensersGridView.CellClick += dispensersGridView_CellClick;
+                usersGridView.CellClick += usersGridView_CellClick;
+
+              
+                usersGridView.CellFormatting += usersGridView_CellFormatting;
+
+                LoadDispenserData();
+                LoadUserData();
+                PopulateComboBoxes();
             }
             catch (MySqlException ex)
             {
                 MessageBox.Show("Connection error: " + ex.Message);
                 this.Close();
-                return;
             }
-
-            ConfigureGrid(dispensersGridView);
-            ConfigureGrid(usersGridView);
-            ConfigureGrid(statsGridView);
-
-            dispensersGridView.CellClick += dispensersGridView_CellClick;
-            usersGridView.CellClick += usersGridView_CellClick;
-
-            LoadDispenserData();
-            LoadUserData();
-            PopulateComboBoxes();
         }
 
         private void ConfigureGrid(KryptonDataGridView dgv)
@@ -56,99 +63,92 @@ namespace testtest
             dgv.AllowUserToAddRows = false;
         }
 
+ 
+        // PASSWORD MASKING
+      
+        private void usersGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+          
+            if (usersGridView.Columns[e.ColumnIndex].Name == "Password" && e.Value != null)
+            {
+                
+                e.Value = new string('*', e.Value.ToString().Length);
+                e.FormattingApplied = true;
+            }
+        }
+
+        // TAB (STATISTICS)
+      
+
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (tabControl1.SelectedIndex == 2)
-            {
-                LoadStatistics();
-            }
+            if (tabControl1.SelectedIndex == 2) LoadStatistics();
+        }
+
+        private void btnFilter_Click(object sender, EventArgs e)
+        {
+            LoadStatistics();
         }
 
         private void LoadStatistics()
         {
             try
             {
-                // UPDATED LOGIC: LEFT JOIN ensures ALL dispensers show on the graph
                 string query = @"
                     SELECT 
                         s.Id as 'ID', 
                         COUNT(l.id) as 'TotalUses'
                     FROM sapunerki s
-                    LEFT JOIN usage_logs l ON s.Id = l.dispenser_id
+                    LEFT JOIN usage_logs l ON s.Id = l.dispenser_id 
+                        AND l.timestamp BETWEEN @start AND @end
                     GROUP BY s.Id
                     ORDER BY s.Id ASC";
 
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+                adapter.SelectCommand.Parameters.AddWithValue("@start", dtpStart.Value);
+                adapter.SelectCommand.Parameters.AddWithValue("@end", dtpEnd.Value);
+
                 DataTable statsTable = new DataTable();
                 adapter.Fill(statsTable);
 
-                if (statsGridView != null)
-                {
-                    statsGridView.DataSource = statsTable;
-                }
-
-                // DRAW THE GRAPH
+                if (statsGridView != null) statsGridView.DataSource = statsTable;
                 UpdateChart(statsTable);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Could not load statistics: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Stats error: " + ex.Message); }
         }
 
         private void UpdateChart(DataTable dt)
         {
             if (usageChart == null) return;
-
-            // Define the custom hex color
             Color customBgColor = ColorTranslator.FromHtml("#636C87");
-
-            // 1. Clear existing data
             usageChart.Series.Clear();
             usageChart.Titles.Clear();
             usageChart.ChartAreas[0].AxisX.Interval = 1;
-
-            // 2. Styling the Chart with the hex color
             usageChart.BackColor = customBgColor;
             usageChart.ChartAreas[0].BackColor = customBgColor;
 
-            // Set up the Title with white text
-            var title = usageChart.Titles.Add("Usage Frequency per Dispenser");
+            var title = usageChart.Titles.Add($"Usage History");
             title.ForeColor = Color.White;
             title.Font = new Font("Segoe UI", 12, FontStyle.Bold);
 
-            // Style the Axes (Labels and Lines) so they are visible against the dark background
             ChartArea area = usageChart.ChartAreas[0];
             area.AxisX.LabelStyle.ForeColor = Color.White;
-            area.AxisX.LineColor = Color.White;
-            area.AxisX.MajorGrid.LineColor = Color.FromArgb(70, Color.White); // Subtle grid lines
-
             area.AxisY.LabelStyle.ForeColor = Color.White;
+            area.AxisX.LineColor = Color.White;
             area.AxisY.LineColor = Color.White;
-            area.AxisY.MajorGrid.LineColor = Color.FromArgb(70, Color.White);
 
-            // 3. Create a New Data Series
-            Series series = new Series("Usage");
-            series.ChartType = SeriesChartType.Column; // Bar Chart
-            series.XValueMember = "ID";
-            series.YValueMembers = "TotalUses";
-
-            // Show number on top of bars in white
-            series.IsValueShownAsLabel = true;
+            Series series = new Series("Usage") { ChartType = SeriesChartType.Column, XValueMember = "ID", YValueMembers = "TotalUses", IsValueShownAsLabel = true };
             series.LabelForeColor = Color.White;
-
-            // Palette choice
             series.Palette = ChartColorPalette.BrightPastel;
 
-            // 4. Bind the DataTable to the Chart
             usageChart.DataSource = dt;
             usageChart.Series.Add(series);
             usageChart.DataBind();
         }
 
-        // ==========================================
+  
         // DISPENSER MANAGEMENT
-        // ==========================================
+    
 
         private void LoadDispenserData()
         {
@@ -178,30 +178,17 @@ namespace testtest
                 new MySqlParameter("@f", comboBoxFloor.SelectedValue),
                 new MySqlParameter("@id", textBoxId.Text));
             LoadDispenserData();
-
-            // Refresh graph if we are currently looking at it
             if (tabControl1.SelectedIndex == 2) LoadStatistics();
         }
 
         private void kryptonButton3_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(textBoxId.Text)) return;
-
-            // LEGIT TWO-STEP DELETE: Clean logs first to maintain ID integrity
-            ExecuteSecure("DELETE FROM usage_logs WHERE dispenser_id = @id",
-                new MySqlParameter("@id", textBoxId.Text));
-
-            // Now delete the actual dispenser
-            ExecuteSecure("DELETE FROM sapunerki WHERE Id = @id",
-                new MySqlParameter("@id", textBoxId.Text));
-
+            ExecuteSecure("DELETE FROM usage_logs WHERE dispenser_id = @id", new MySqlParameter("@id", textBoxId.Text));
+            ExecuteSecure("DELETE FROM sapunerki WHERE Id = @id", new MySqlParameter("@id", textBoxId.Text));
             LoadDispenserData();
-
-            // Refresh graph immediately so the deleted ID vanishes from chart
             if (tabControl1.SelectedIndex == 2) LoadStatistics();
-
             textBoxId.Clear();
-            MessageBox.Show("Dispenser and associated logs deleted.");
         }
 
         private void btnClear_Click(object sender, EventArgs e)
@@ -222,9 +209,9 @@ namespace testtest
             }
         }
 
-        // ==========================================
+   
         // USER MANAGEMENT
-        // ==========================================
+     
 
         private void LoadUserData()
         {
@@ -279,10 +266,6 @@ namespace testtest
             }
         }
 
-        // ==========================================
-        // HELPERS & STUBS
-        // ==========================================
-
         private void ExecuteSecure(string sql, params MySqlParameter[] p)
         {
             try
@@ -316,6 +299,8 @@ namespace testtest
         private void kryptonLabel2_Click(object sender, EventArgs e) { }
         private void kryptonTextBox1_TextChanged(object sender, EventArgs e) { }
         private void kryptonLabel4_Click(object sender, EventArgs e) { }
+        private void kryptonLabel8_Click(object sender, EventArgs e) { }
+        private void kryptonButton1_Click(object sender, EventArgs e) { LoadStatistics(); }
 
         private void EditDatabase_FormClosing(object sender, FormClosingEventArgs e)
         {

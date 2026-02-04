@@ -30,26 +30,16 @@ namespace testtest
             password = kryptonTextBox2.Text;
             MySqlCommand myCommand;
             MySqlConnection conn;
-            string connectionString;
+            string connectionString = "Server=127.0.0.1;Port=3307;User=root;Password=1234;Database=sapunerkdb;SslMode=None;";
+
             try
             {
-                // set the correct values for your server, user, password and database name
-                connectionString = "Server=127.0.0.1;Port=3307;User=root;Password=1234;Database=sapunerkdb;SslMode=None;";
-
-                // create the connection
                 conn = new MySqlConnection(connectionString);
-
-                // open a connection
                 conn.Open();
-
-                // create a MySQL command and set the SQL statement
-                myCommand = new MySqlCommand();
-                myCommand.Connection = conn;
-                myCommand.CommandText = @"SELECT * FROM users where Password = @password and Username = @username;";
+                myCommand = new MySqlCommand("SELECT * FROM users where Password = @password and Username = @username;", conn);
                 myCommand.Parameters.AddWithValue("@password", password);
                 myCommand.Parameters.AddWithValue("@username", username);
 
-                // execute the command and read the results
                 using (var myReader = myCommand.ExecuteReader())
                 {
                     if (myReader.Read())
@@ -58,39 +48,40 @@ namespace testtest
                     }
                     else
                     {
-                        MessageBox.Show("please enter valid username and password.");
+                        MessageBox.Show("Please enter valid username and password.");
+                        return;
                     }
                 }
-                //MessageBox.Show(priority.ToString());
 
+
+                this.Hide(); // Hide Login
+
+                if (priority == 0)
+                {
+                    Admin admin = new Admin();
+                    admin.ShowDialog();
+                }
+                else if (priority >= 1 && priority <= 3)
+                {
+                    NormalUser form = new NormalUser();
+                    form.SetLBLName(username);
+                    form.SetFloorLBL(priority);
+                    form.ShowDialog();
+                }
+
+
+                kryptonTextBox1.Text = string.Empty;
+                kryptonTextBox2.Text = string.Empty;
+                this.Show(); // Re-show Login form for the next user
             }
             catch (MySqlException ex)
             {
                 MessageBox.Show("Database error: " + ex.Message);
             }
-            if (priority == 0)
-            {
-                Admin admin = new Admin();
-                this.Hide();
-                admin.ShowDialog();
-                admin.Activate();
-                this.Close();
-            }
-            else if (priority < 0 || priority > 3)
-            {
-                kryptonTextBox1.Text = string.Empty;
-                kryptonTextBox2.Text = string.Empty;
-            }
-            else
-            {
-                NormalUser form = new NormalUser();
-                form.SetLBLName(username);
-                form.SetFloorLBL(priority);
-                this.Hide();
-                form.ShowDialog();
-                form.Activate();
-                this.Close();
-            }
+        }
+        private void LoginForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Application.Exit();
         }
 
         private void kryptonLabel1_Click(object sender, EventArgs e)
