@@ -27,24 +27,27 @@ namespace testtest
             {
                 conn = new MySqlConnection(connectionString);
                 conn.Open();
+
+                // Set default dates for the pickers (Start of today to end of today)
+                dtpStart.Value = DateTime.Now.Date;
+                dtpEnd.Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
+
+                ConfigureGrid(dispensersGridView);
+                ConfigureGrid(usersGridView);
+                ConfigureGrid(statsGridView);
+
+                dispensersGridView.CellClick += dispensersGridView_CellClick;
+                usersGridView.CellClick += usersGridView_CellClick;
+
+                LoadDispenserData();
+                LoadUserData();
+                PopulateComboBoxes();
             }
             catch (MySqlException ex)
             {
                 MessageBox.Show("Connection error: " + ex.Message);
                 this.Close();
-                return;
             }
-
-            ConfigureGrid(dispensersGridView);
-            ConfigureGrid(usersGridView);
-            ConfigureGrid(statsGridView);
-
-            dispensersGridView.CellClick += dispensersGridView_CellClick;
-            usersGridView.CellClick += usersGridView_CellClick;
-
-            LoadDispenserData();
-            LoadUserData();
-            PopulateComboBoxes();
         }
 
         private void ConfigureGrid(KryptonDataGridView dgv)
@@ -64,21 +67,32 @@ namespace testtest
             }
         }
 
+        // Triggered by your Filter Button
+        private void btnFilter_Click(object sender, EventArgs e)
+        {
+            LoadStatistics();
+        }
+
         private void LoadStatistics()
         {
             try
             {
-                // UPDATED LOGIC: LEFT JOIN ensures ALL dispensers show on the graph
+                // LEGIT FILTERING LOGIC:
+                // We use LEFT JOIN so dispensers with 0 uses in this time period still show on the graph.
                 string query = @"
                     SELECT 
                         s.Id as 'ID', 
                         COUNT(l.id) as 'TotalUses'
                     FROM sapunerki s
-                    LEFT JOIN usage_logs l ON s.Id = l.dispenser_id
+                    LEFT JOIN usage_logs l ON s.Id = l.dispenser_id 
+                        AND l.timestamp BETWEEN @start AND @end
                     GROUP BY s.Id
                     ORDER BY s.Id ASC";
 
                 MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+                adapter.SelectCommand.Parameters.AddWithValue("@start", dtpStart.Value);
+                adapter.SelectCommand.Parameters.AddWithValue("@end", dtpEnd.Value);
+
                 DataTable statsTable = new DataTable();
                 adapter.Fill(statsTable);
 
@@ -87,7 +101,6 @@ namespace testtest
                     statsGridView.DataSource = statsTable;
                 }
 
-                // DRAW THE GRAPH
                 UpdateChart(statsTable);
             }
             catch (Exception ex)
@@ -100,47 +113,35 @@ namespace testtest
         {
             if (usageChart == null) return;
 
-            // Define the custom hex color
             Color customBgColor = ColorTranslator.FromHtml("#636C87");
-
-            // 1. Clear existing data
             usageChart.Series.Clear();
             usageChart.Titles.Clear();
             usageChart.ChartAreas[0].AxisX.Interval = 1;
-
-            // 2. Styling the Chart with the hex color
             usageChart.BackColor = customBgColor;
             usageChart.ChartAreas[0].BackColor = customBgColor;
 
-            // Set up the Title with white text
-            var title = usageChart.Titles.Add("Usage Frequency per Dispenser");
+            var title = usageChart.Titles.Add($"Usage from {dtpStart.Value:dd/MM} to {dtpEnd.Value:dd/MM}");
             title.ForeColor = Color.White;
             title.Font = new Font("Segoe UI", 12, FontStyle.Bold);
 
-            // Style the Axes (Labels and Lines) so they are visible against the dark background
             ChartArea area = usageChart.ChartAreas[0];
             area.AxisX.LabelStyle.ForeColor = Color.White;
             area.AxisX.LineColor = Color.White;
-            area.AxisX.MajorGrid.LineColor = Color.FromArgb(70, Color.White); // Subtle grid lines
-
+            area.AxisX.MajorGrid.LineColor = Color.FromArgb(70, Color.White);
             area.AxisY.LabelStyle.ForeColor = Color.White;
             area.AxisY.LineColor = Color.White;
             area.AxisY.MajorGrid.LineColor = Color.FromArgb(70, Color.White);
 
-            // 3. Create a New Data Series
-            Series series = new Series("Usage");
-            series.ChartType = SeriesChartType.Column; // Bar Chart
-            series.XValueMember = "ID";
-            series.YValueMembers = "TotalUses";
-
-            // Show number on top of bars in white
-            series.IsValueShownAsLabel = true;
+            Series series = new Series("Usage")
+            {
+                ChartType = SeriesChartType.Column,
+                XValueMember = "ID",
+                YValueMembers = "TotalUses",
+                IsValueShownAsLabel = true
+            };
             series.LabelForeColor = Color.White;
-
-            // Palette choice
             series.Palette = ChartColorPalette.BrightPastel;
 
-            // 4. Bind the DataTable to the Chart
             usageChart.DataSource = dt;
             usageChart.Series.Add(series);
             usageChart.DataBind();
@@ -178,30 +179,18 @@ namespace testtest
                 new MySqlParameter("@f", comboBoxFloor.SelectedValue),
                 new MySqlParameter("@id", textBoxId.Text));
             LoadDispenserData();
-
-            // Refresh graph if we are currently looking at it
             if (tabControl1.SelectedIndex == 2) LoadStatistics();
         }
 
         private void kryptonButton3_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(textBoxId.Text)) return;
-
-            // LEGIT TWO-STEP DELETE: Clean logs first to maintain ID integrity
-            ExecuteSecure("DELETE FROM usage_logs WHERE dispenser_id = @id",
-                new MySqlParameter("@id", textBoxId.Text));
-
-            // Now delete the actual dispenser
-            ExecuteSecure("DELETE FROM sapunerki WHERE Id = @id",
-                new MySqlParameter("@id", textBoxId.Text));
-
+            // Clean logs first to maintain ID integrity
+            ExecuteSecure("DELETE FROM usage_logs WHERE dispenser_id = @id", new MySqlParameter("@id", textBoxId.Text));
+            ExecuteSecure("DELETE FROM sapunerki WHERE Id = @id", new MySqlParameter("@id", textBoxId.Text));
             LoadDispenserData();
-
-            // Refresh graph immediately so the deleted ID vanishes from chart
             if (tabControl1.SelectedIndex == 2) LoadStatistics();
-
             textBoxId.Clear();
-            MessageBox.Show("Dispenser and associated logs deleted.");
         }
 
         private void btnClear_Click(object sender, EventArgs e)
@@ -316,6 +305,13 @@ namespace testtest
         private void kryptonLabel2_Click(object sender, EventArgs e) { }
         private void kryptonTextBox1_TextChanged(object sender, EventArgs e) { }
         private void kryptonLabel4_Click(object sender, EventArgs e) { }
+        private void kryptonLabel8_Click(object sender, EventArgs e) { }
+
+        // This triggers if you didn't rename the button in the designer
+        private void kryptonButton1_Click(object sender, EventArgs e)
+        {
+            LoadStatistics();
+        }
 
         private void EditDatabase_FormClosing(object sender, FormClosingEventArgs e)
         {

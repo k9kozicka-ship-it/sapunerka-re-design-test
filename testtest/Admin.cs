@@ -15,15 +15,10 @@ namespace testtest
         private string connectionString = "Server=127.0.0.1;Port=3307;User=root;Password=1234;Database=sapunerkdb;SslMode=None;";
         private Timer refreshTimer;
 
-        public Admin()
-        {
-            InitializeComponent();
-            this.DoubleBuffered = true;
-        }
+        public Admin() { InitializeComponent(); this.DoubleBuffered = true; }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Text = "Dispenser System - Admin";
             try
             {
                 conn = new MySqlConnection(connectionString);
@@ -33,7 +28,7 @@ namespace testtest
                 refreshTimer.Tick += (s, ev) => RefreshDispenserDisplay();
                 refreshTimer.Start();
             }
-            catch (Exception ex) { MessageBox.Show("DB Error: " + ex.Message); }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
         }
 
         private void RefreshDispenserDisplay()
@@ -42,12 +37,11 @@ namespace testtest
             {
                 DataTable dt = new DataTable();
                 using (var cmd = new MySqlCommand("SELECT Id, Distance, Floor FROM sapunerki ORDER BY Floor, Id", conn))
-                using (var adapter = new MySqlDataAdapter(cmd)) { adapter.Fill(dt); }
+                using (var adp = new MySqlDataAdapter(cmd)) { adp.Fill(dt); }
 
-                // Get REAL sensor data from ID 1
-                double realDistance = 6.0;
+                double realDist = 6.0;
                 var realRow = dt.AsEnumerable().FirstOrDefault(r => r.Field<int>("Id") == 1);
-                if (realRow != null) realDistance = Convert.ToDouble(realRow["Distance"]);
+                if (realRow != null) realDist = Convert.ToDouble(realRow["Distance"]);
 
                 var existingIds = mainPanel.Controls.OfType<KryptonProgressBar>().Select(p => p.Name.Substring(1)).ToHashSet();
                 int currentFloor = -1, startX = 160, currentX = startX, currentY = 20;
@@ -56,15 +50,7 @@ namespace testtest
                 {
                     int id = Convert.ToInt32(row["Id"]);
                     int floor = Convert.ToInt32(row["Floor"]);
-                    double distToUse;
-
-                    // REALISTIC FAKING LOGIC
-                    if (id == 1) distToUse = realDistance;
-                    else
-                    {
-                        Random rng = new Random(id); // Seed with ID for consistent offset
-                        distToUse = realDistance + (rng.NextDouble() * 3.0 - 1.5);
-                    }
+                    double dist = (id == 1) ? realDist : realDist + (new Random(id).NextDouble() * 3.0 - 1.5);
 
                     existingIds.Remove(id.ToString());
                     if (floor != currentFloor)
@@ -73,8 +59,8 @@ namespace testtest
                         AddFloorHeader(floor, currentY);
                     }
 
-                    int percent = (int)Math.Max(0, Math.Min(100, ((9.5 - distToUse) / 8) * 100));
-                    UpdateDispenserUI(id, percent, new Point(currentX, currentY + 25));
+                    int percent = (int)Math.Max(0, Math.Min(100, ((9.5 - dist) / 8) * 100));
+                    UpdateUI(id, percent, new Point(currentX, currentY + 25));
                     currentX += 220;
                 }
                 foreach (string id in existingIds) { RemoveControl("p" + id); RemoveControl("l" + id); }
@@ -87,29 +73,74 @@ namespace testtest
             string name = "floorLabel" + floor;
             if (!mainPanel.Controls.ContainsKey(name))
             {
-                var lbl = new KryptonLabel { Name = name, Text = $"FLOOR {floor}", Location = new Point(20, y + 15), LabelStyle = LabelStyle.TitleControl, AutoSize = true };
-                lbl.StateCommon.ShortText.Color1 = Color.White;
-                mainPanel.Controls.Add(lbl);
+                var l = new KryptonLabel { Name = name, Text = $"FLOOR {floor}", Location = new Point(20, y + 15), LabelStyle = LabelStyle.TitleControl, AutoSize = true };
+                l.StateCommon.ShortText.Color1 = Color.White;
+                mainPanel.Controls.Add(l);
             }
         }
 
-        private void UpdateDispenserUI(int id, int val, Point loc)
+        private void UpdateUI(int id, int val, Point loc)
         {
             string pName = "p" + id, lName = "l" + id;
-            KryptonProgressBar bar = mainPanel.Controls[pName] as KryptonProgressBar;
-            if (bar == null) { bar = new KryptonProgressBar { Name = pName, Size = new Size(180, 26) }; mainPanel.Controls.Add(bar); }
-            bar.Location = loc; bar.Value = val;
+            KryptonProgressBar p = mainPanel.Controls[pName] as KryptonProgressBar;
 
-            KryptonLabel lbl = mainPanel.Controls[lName] as KryptonLabel;
-            if (lbl == null)
+            if (p == null)
             {
-                lbl = new KryptonLabel { Name = lName, AutoSize = true, LabelStyle = LabelStyle.NormalPanel };
-                lbl.StateCommon.ShortText.Font = new Font("Segoe UI", 9, FontStyle.Bold);
-                lbl.StateCommon.ShortText.Color1 = Color.White;
-                mainPanel.Controls.Add(lbl);
+                p = new KryptonProgressBar
+                {
+                    Name = pName,
+                    Size = new Size(180, 26),
+                    Minimum = 0,
+                    Maximum = 100
+                };
+
+                // --- SUBTLE ROUNDING (3) ---
+                p.StateCommon.Border.DrawBorders = PaletteDrawBorders.All;
+                p.StateCommon.Border.Rounding = 3;
+                p.StateCommon.Border.Color1 = Color.White;
+
+                mainPanel.Controls.Add(p);
             }
-            lbl.Location = new Point(loc.X, loc.Y - 28);
-            lbl.Values.Text = $"Dispenser №{id} - {val}%";
+            p.Location = loc;
+
+            // --- SMOOTH SLIDING ANIMATION ---
+            // This loop moves the bar 1% at a time until it hits the target
+            if (p.Value != val)
+            {
+                int startValue = p.Value;
+                int endValue = val;
+
+                // Move towards the target value
+                if (startValue < endValue)
+                {
+                    for (int i = startValue; i <= endValue; i++)
+                    {
+                        p.Value = i;
+                        p.Refresh(); // Forces the bar to redraw immediately
+                        System.Threading.Thread.Sleep(5); // 5ms delay per 1% movement
+                    }
+                }
+                else
+                {
+                    for (int i = startValue; i >= endValue; i--)
+                    {
+                        p.Value = i;
+                        p.Refresh();
+                        System.Threading.Thread.Sleep(5);
+                    }
+                }
+            }
+
+            KryptonLabel l = mainPanel.Controls[lName] as KryptonLabel;
+            if (l == null)
+            {
+                l = new KryptonLabel { Name = lName, AutoSize = true, LabelStyle = LabelStyle.NormalPanel };
+                l.StateCommon.ShortText.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+                l.StateCommon.ShortText.Color1 = Color.White;
+                mainPanel.Controls.Add(l);
+            }
+            l.Location = new Point(loc.X, loc.Y - 28);
+            l.Values.Text = $"№{id} - {val}%";
         }
 
         private void RemoveControl(string name)
@@ -119,9 +150,7 @@ namespace testtest
 
         private void btnManageDatabase_Click_1(object sender, EventArgs e)
         {
-            refreshTimer.Stop();
-            new EditDispensers().ShowDialog();
-            refreshTimer.Start();
+            refreshTimer.Stop(); new EditDispensers().ShowDialog(); refreshTimer.Start();
         }
     }
 }
