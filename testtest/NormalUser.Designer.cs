@@ -32,6 +32,8 @@
             this.UserNameLbl = new Krypton.Toolkit.KryptonLabel();
             this.Floor_label = new Krypton.Toolkit.KryptonLabel();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.mainPanel = new Krypton.Toolkit.KryptonPanel();
+            ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).BeginInit();
             this.SuspendLayout();
             // 
             // UserNameLbl
@@ -57,6 +59,14 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // mainPanel
+            // 
+            this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainPanel.Location = new System.Drawing.Point(0, 0);
+            this.mainPanel.Name = "mainPanel";
+            this.mainPanel.Size = new System.Drawing.Size(1067, 554);
+            this.mainPanel.TabIndex = 4;
+            // 
             // NormalUser
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -64,9 +74,11 @@
             this.ClientSize = new System.Drawing.Size(1067, 554);
             this.Controls.Add(this.Floor_label);
             this.Controls.Add(this.UserNameLbl);
+            this.Controls.Add(this.mainPanel);
             this.Name = "NormalUser";
             this.Text = "NormalUser";
             this.Load += new System.EventHandler(this.NormalUser_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -77,5 +89,6 @@
         private Krypton.Toolkit.KryptonLabel UserNameLbl;
         private Krypton.Toolkit.KryptonLabel Floor_label;
         private System.Windows.Forms.Timer timer1;
+        private Krypton.Toolkit.KryptonPanel mainPanel;
     }
 }

@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.btnManageDatabase = new Krypton.Toolkit.KryptonButton();
+            this.mainPanel = new Krypton.Toolkit.KryptonPanel();
+            ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).BeginInit();
             this.SuspendLayout();
             // 
             // btnManageDatabase
@@ -42,15 +44,25 @@
             this.btnManageDatabase.Values.Text = "Manage";
             this.btnManageDatabase.Click += new System.EventHandler(this.btnManageDatabase_Click_1);
             // 
+            // mainPanel
+            // 
+            this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainPanel.Location = new System.Drawing.Point(0, 0);
+            this.mainPanel.Name = "mainPanel";
+            this.mainPanel.Size = new System.Drawing.Size(1067, 554);
+            this.mainPanel.TabIndex = 3;
+            // 
             // Admin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1067, 554);
             this.Controls.Add(this.btnManageDatabase);
+            this.Controls.Add(this.mainPanel);
             this.Name = "Admin";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.mainPanel)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -58,5 +70,6 @@
         #endregion
 
         private Krypton.Toolkit.KryptonButton btnManageDatabase;
+        private Krypton.Toolkit.KryptonPanel mainPanel;
     }
 }
