@@ -1,13 +1,10 @@
 ﻿using Krypton.Toolkit;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting; // Required for Graphs
 using MySqlConnector;
 
 namespace testtest
@@ -17,17 +14,15 @@ namespace testtest
         private MySqlConnection conn;
         private string connectionString = "Server=127.0.0.1;Port=3307;User=root;Password=1234;Database=sapunerkdb;SslMode=None;";
 
-        private DataTable dispenserDataTable;
-        private DataTable userDataTable;
         public EditDispensers()
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
         }
 
         private void EditDispensers_Load(object sender, EventArgs e)
         {
             this.Text = "Database Management";
-
             try
             {
                 conn = new MySqlConnection(connectionString);
@@ -35,347 +30,296 @@ namespace testtest
             }
             catch (MySqlException ex)
             {
-                MessageBox.Show("Database connection error: " + ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Connection error: " + ex.Message);
                 this.Close();
                 return;
             }
 
-            // Configure Dispenser Controls
-            dispensersGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dispensersGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dispensersGridView.MultiSelect = false;
-            dispensersGridView.ReadOnly = true;
-            dispensersGridView.AllowUserToAddRows = false;
-            dispensersGridView.CellClick += dispensersGridView_CellClick;
+            ConfigureGrid(dispensersGridView);
+            ConfigureGrid(usersGridView);
+            ConfigureGrid(statsGridView);
 
-            // Configure User Controls
-            usersGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            usersGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            usersGridView.MultiSelect = false;
-            usersGridView.ReadOnly = true;
-            usersGridView.AllowUserToAddRows = false;
+            dispensersGridView.CellClick += dispensersGridView_CellClick;
             usersGridView.CellClick += usersGridView_CellClick;
 
-            // Load all data
             LoadDispenserData();
             LoadUserData();
             PopulateComboBoxes();
         }
-        private void PopulateComboBoxes()
+
+        private void ConfigureGrid(KryptonDataGridView dgv)
         {
-            try
-            {
-                // Populate the User ComboBox
-                comboBoxUser.DataSource = null;
-                string userQuery = "SELECT Username FROM users";
-                MySqlDataAdapter userAdapter = new MySqlDataAdapter(userQuery, conn);
-                DataTable userNames = new DataTable();
-                userAdapter.Fill(userNames);
-                comboBoxUser.DataSource = userNames;
-                comboBoxUser.DisplayMember = "Username";
-                comboBoxUser.ValueMember = "Username";
+            if (dgv == null) return;
+            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgv.ReadOnly = true;
+            dgv.AllowUserToAddRows = false;
+        }
 
-                // Populate the Floor ComboBox
-                comboBoxFloor.DataSource = null;
-                string floorQuery = "SELECT Priority FROM users";
-                MySqlDataAdapter floorAdapter = new MySqlDataAdapter(floorQuery, conn);
-                DataTable floorPriorities = new DataTable();
-                floorAdapter.Fill(floorPriorities);
-                comboBoxFloor.DataSource = floorPriorities;
-                comboBoxFloor.DisplayMember = "Priority";
-                comboBoxFloor.ValueMember = "Priority";
-
-                comboBoxUser.SelectedIndex = -1;
-                comboBoxFloor.SelectedIndex = -1;
-            }
-            catch (Exception ex)
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabControl1.SelectedIndex == 2)
             {
-                MessageBox.Show("Failed to populate dropdown menus: " + ex.Message);
+                LoadStatistics();
             }
         }
 
-        // ====================================================================
-        // DISPENSER MANAGEMENT LOGIC
-        // ====================================================================
+        private void LoadStatistics()
+        {
+            try
+            {
+                // UPDATED LOGIC: LEFT JOIN ensures ALL dispensers show on the graph
+                string query = @"
+                    SELECT 
+                        s.Id as 'ID', 
+                        COUNT(l.id) as 'TotalUses'
+                    FROM sapunerki s
+                    LEFT JOIN usage_logs l ON s.Id = l.dispenser_id
+                    GROUP BY s.Id
+                    ORDER BY s.Id ASC";
+
+                MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+                DataTable statsTable = new DataTable();
+                adapter.Fill(statsTable);
+
+                if (statsGridView != null)
+                {
+                    statsGridView.DataSource = statsTable;
+                }
+
+                // DRAW THE GRAPH
+                UpdateChart(statsTable);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not load statistics: " + ex.Message);
+            }
+        }
+
+        private void UpdateChart(DataTable dt)
+        {
+            if (usageChart == null) return;
+
+            // Define the custom hex color
+            Color customBgColor = ColorTranslator.FromHtml("#636C87");
+
+            // 1. Clear existing data
+            usageChart.Series.Clear();
+            usageChart.Titles.Clear();
+            usageChart.ChartAreas[0].AxisX.Interval = 1;
+
+            // 2. Styling the Chart with the hex color
+            usageChart.BackColor = customBgColor;
+            usageChart.ChartAreas[0].BackColor = customBgColor;
+
+            // Set up the Title with white text
+            var title = usageChart.Titles.Add("Usage Frequency per Dispenser");
+            title.ForeColor = Color.White;
+            title.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+
+            // Style the Axes (Labels and Lines) so they are visible against the dark background
+            ChartArea area = usageChart.ChartAreas[0];
+            area.AxisX.LabelStyle.ForeColor = Color.White;
+            area.AxisX.LineColor = Color.White;
+            area.AxisX.MajorGrid.LineColor = Color.FromArgb(70, Color.White); // Subtle grid lines
+
+            area.AxisY.LabelStyle.ForeColor = Color.White;
+            area.AxisY.LineColor = Color.White;
+            area.AxisY.MajorGrid.LineColor = Color.FromArgb(70, Color.White);
+
+            // 3. Create a New Data Series
+            Series series = new Series("Usage");
+            series.ChartType = SeriesChartType.Column; // Bar Chart
+            series.XValueMember = "ID";
+            series.YValueMembers = "TotalUses";
+
+            // Show number on top of bars in white
+            series.IsValueShownAsLabel = true;
+            series.LabelForeColor = Color.White;
+
+            // Palette choice
+            series.Palette = ChartColorPalette.BrightPastel;
+
+            // 4. Bind the DataTable to the Chart
+            usageChart.DataSource = dt;
+            usageChart.Series.Add(series);
+            usageChart.DataBind();
+        }
+
+        // ==========================================
+        // DISPENSER MANAGEMENT
+        // ==========================================
 
         private void LoadDispenserData()
         {
             try
             {
-                string query = "SELECT Id, User, Distance, Floor FROM sapunerki";
-                MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
-                dispenserDataTable = new DataTable();
-                adapter.Fill(dispenserDataTable);
-                dispensersGridView.DataSource = dispenserDataTable;
+                DataTable dt = new DataTable();
+                new MySqlDataAdapter("SELECT Id, User, Distance, Floor FROM sapunerki", conn).Fill(dt);
+                dispensersGridView.DataSource = dt;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to load dispenser data: " + ex.Message);
-            }
+            catch { }
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            if (comboBoxUser.SelectedValue == null) return;
+            ExecuteSecure("INSERT INTO sapunerki (User, Distance, Floor) VALUES (@u, 6, @f)",
+                new MySqlParameter("@u", comboBoxUser.SelectedValue),
+                new MySqlParameter("@f", comboBoxFloor.SelectedValue));
+            LoadDispenserData();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(textBoxId.Text)) return;
+            ExecuteSecure("UPDATE sapunerki SET User = @u, Floor = @f WHERE Id = @id",
+                new MySqlParameter("@u", comboBoxUser.SelectedValue),
+                new MySqlParameter("@f", comboBoxFloor.SelectedValue),
+                new MySqlParameter("@id", textBoxId.Text));
+            LoadDispenserData();
+
+            // Refresh graph if we are currently looking at it
+            if (tabControl1.SelectedIndex == 2) LoadStatistics();
+        }
+
+        private void kryptonButton3_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(textBoxId.Text)) return;
+
+            // LEGIT TWO-STEP DELETE: Clean logs first to maintain ID integrity
+            ExecuteSecure("DELETE FROM usage_logs WHERE dispenser_id = @id",
+                new MySqlParameter("@id", textBoxId.Text));
+
+            // Now delete the actual dispenser
+            ExecuteSecure("DELETE FROM sapunerki WHERE Id = @id",
+                new MySqlParameter("@id", textBoxId.Text));
+
+            LoadDispenserData();
+
+            // Refresh graph immediately so the deleted ID vanishes from chart
+            if (tabControl1.SelectedIndex == 2) LoadStatistics();
+
+            textBoxId.Clear();
+            MessageBox.Show("Dispenser and associated logs deleted.");
+        }
+
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            textBoxId.Clear();
+            comboBoxUser.SelectedIndex = -1;
+            comboBoxFloor.SelectedIndex = -1;
         }
 
         private void dispensersGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
-            {   
+            {
                 DataGridViewRow row = dispensersGridView.Rows[e.RowIndex];
                 textBoxId.Text = row.Cells["Id"].Value.ToString();
                 comboBoxUser.SelectedValue = row.Cells["User"].Value.ToString();
                 comboBoxFloor.SelectedValue = row.Cells["Floor"].Value;
             }
         }
-        private void kryptonLabel2_Click(object sender, EventArgs e)
-        {
 
-        }
-
-        private void kryptonTextBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void kryptonButton3_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textBoxId.Text))
-            {
-                MessageBox.Show("Please select a dispenser to delete.", "Selection Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var confirmResult = MessageBox.Show("Are you sure you want to delete this dispenser?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirmResult == DialogResult.Yes)
-            {
-                try
-                {
-                    string query = "DELETE FROM sapunerki WHERE Id = @Id";
-                    MySqlCommand cmd = new MySqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@Id", textBoxId.Text);
-                    cmd.ExecuteNonQuery();
-
-                    MessageBox.Show("Dispenser deleted successfully!", "Success");
-                    LoadDispenserData();
-                    ClearDispenserFields();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Failed to delete dispenser: " + ex.Message, "Error");
-                }
-            }
-        }
-
-        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            if (comboBoxUser.SelectedIndex == -1 || comboBoxFloor.SelectedIndex == -1)
-            {
-                MessageBox.Show("Please select a User, a Floor, and enter a Distance.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            try
-            {
-                string query = "INSERT INTO sapunerki (User, Distance, Floor) VALUES (@User, @Distance, @Floor)";
-                MySqlCommand cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@User", comboBoxUser.SelectedValue);
-                cmd.Parameters.AddWithValue("@Distance", 6);
-                cmd.Parameters.AddWithValue("@Floor", comboBoxFloor.SelectedValue);
-
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("Dispenser added successfully!", "Success");
-                LoadDispenserData();
-                ClearDispenserFields();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to add dispenser: " + ex.Message, "Error");
-            }
-        }
-
-        private void btnUpdate_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textBoxId.Text))
-            {
-                MessageBox.Show("Please select a dispenser from the grid to update.", "Selection Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            try
-            {
-                string query = "UPDATE sapunerki SET User = @User, Distance = @Distance, Floor = @Floor WHERE Id = @Id";
-                MySqlCommand cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@User", comboBoxUser.SelectedValue);
-                cmd.Parameters.AddWithValue("@Distance", 6);
-                cmd.Parameters.AddWithValue("@Floor", comboBoxFloor.SelectedValue);
-                cmd.Parameters.AddWithValue("@Id", Convert.ToInt32(textBoxId.Text));
-
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("Dispenser updated successfully!", "Success");
-                LoadDispenserData();
-                ClearDispenserFields();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to update dispenser: " + ex.Message, "Error");
-            }
-        }
-
-        private void btnClear_Click(object sender, EventArgs e)
-        {
-            ClearDispenserFields();
-        }
-        private void ClearDispenserFields()
-        {
-            textBoxId.Clear();
-            comboBoxUser.SelectedIndex = -1;
-            comboBoxFloor.SelectedIndex = -1;
-            dispensersGridView.ClearSelection();
-        }
-
-        // ====================================================================
-        // USER MANAGEMENT LOGIC
-        // ====================================================================
+        // ==========================================
+        // USER MANAGEMENT
+        // ==========================================
 
         private void LoadUserData()
         {
             try
             {
-                string query = "SELECT Username, Password, Priority FROM users";
-                MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
-                userDataTable = new DataTable();
-                adapter.Fill(userDataTable);
-                usersGridView.DataSource = userDataTable;
+                DataTable dt = new DataTable();
+                new MySqlDataAdapter("SELECT Username, Password, Priority FROM users", conn).Fill(dt);
+                usersGridView.DataSource = dt;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to load user data: " + ex.Message, "Error");
-            }
+            catch { }
         }
-        
+
+        private void btnAddUser_Click(object sender, EventArgs e)
+        {
+            ExecuteSecure("INSERT INTO users (Username, Password, Priority) VALUES (@u, @p, @pr)",
+                new MySqlParameter("@u", textboxUsername.Text),
+                new MySqlParameter("@p", textBoxPassword.Text),
+                new MySqlParameter("@pr", textBoxPriority.Text));
+            LoadUserData();
+            PopulateComboBoxes();
+        }
+
+        private void btnUpdateUser_Click(object sender, EventArgs e)
+        {
+            ExecuteSecure("UPDATE users SET Password=@p, Priority=@pr WHERE Username=@u",
+                new MySqlParameter("@p", textBoxPassword.Text),
+                new MySqlParameter("@pr", textBoxPriority.Text),
+                new MySqlParameter("@u", textboxUsername.Text));
+            LoadUserData();
+        }
+
+        private void btnDeleteUser_Click(object sender, EventArgs e)
+        {
+            ExecuteSecure("DELETE FROM users WHERE Username = @u", new MySqlParameter("@u", textboxUsername.Text));
+            LoadUserData();
+            PopulateComboBoxes();
+        }
+
+        private void btnClearUserField_Click(object sender, EventArgs e)
+        {
+            textboxUsername.Clear(); textBoxPassword.Clear(); textBoxPriority.Clear();
+        }
+
         private void usersGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = usersGridView.Rows[e.RowIndex];
-
                 textboxUsername.Text = row.Cells["Username"].Value.ToString();
                 textBoxPassword.Text = row.Cells["Password"].Value.ToString();
                 textBoxPriority.Text = row.Cells["Priority"].Value.ToString();
             }
         }
-        private void kryptonLabel4_Click(object sender, EventArgs e)
+
+        // ==========================================
+        // HELPERS & STUBS
+        // ==========================================
+
+        private void ExecuteSecure(string sql, params MySqlParameter[] p)
         {
-
-        }
-
-        private void btnAddUser_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textboxUsername.Text) || string.IsNullOrWhiteSpace(textBoxPassword.Text) || string.IsNullOrWhiteSpace(textBoxPriority.Text))
-            {
-                MessageBox.Show("Please fill in Username, Password, and Priority.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             try
             {
-                string query = "INSERT INTO users (Username, Password, Priority) VALUES (@Username, @Password, @Priority)";
-                MySqlCommand cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Username", textboxUsername.Text);
-                cmd.Parameters.AddWithValue("@Password", textBoxPassword.Text);
-                cmd.Parameters.AddWithValue("@Priority", Convert.ToInt32(textBoxPriority.Text));
-
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("User added successfully!", "Success");
-                LoadUserData();
-                PopulateComboBoxes();
-                ClearUserFields();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to add user. Ensure Username and Priority are unique.\n\n" + ex.Message, "Error");
-            }
-        }
-
-        private void btnUpdateUser_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textboxUsername.Text))
-            {
-                MessageBox.Show("Please select a user to update.", "Selection Error");
-                return;
-            }
-
-            try
-            {
-                string query = "UPDATE users SET Username = @NewUsername, Password = @Password, Priority = @Priority WHERE Username = @OldUsername";
-                MySqlCommand cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@NewUsername", textboxUsername.Text);
-                cmd.Parameters.AddWithValue("@Password", textBoxPassword.Text);
-                cmd.Parameters.AddWithValue("@Priority", Convert.ToInt32(textBoxPriority.Text));
-                cmd.Parameters.AddWithValue("@OldUsername", textboxUsername.Text);
-
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("User updated successfully!", "Success");
-                LoadUserData();
-                PopulateComboBoxes();
-                ClearUserFields();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to update user. Ensure Username and Priority remain unique.\n\n" + ex.Message, "Error");
-            }
-        }
-
-        private void btnDeleteUser_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textboxUsername.Text))
-            {
-                MessageBox.Show("Please select a user to delete.", "Selection Error");
-                return;
-            }
-
-            if (MessageBox.Show("Are you sure you want to delete this user?\nThis may affect dispensers assigned to them.", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
-            {
-                try
+                using (MySqlCommand cmd = new MySqlCommand(sql, conn))
                 {
-                    string query = "DELETE FROM users WHERE Username = @Username";
-                    MySqlCommand cmd = new MySqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@Username", textboxUsername.Text);
+                    cmd.Parameters.AddRange(p);
                     cmd.ExecuteNonQuery();
-
-                    MessageBox.Show("User deleted successfully.", "Success");
-                    LoadUserData();
-                    PopulateComboBoxes();
-                    ClearUserFields();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Failed to delete user. Make sure no dispensers are assigned to this user before deleting.\n\n" + ex.Message, "Error");
                 }
             }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
         }
 
-        private void btnClearUserField_Click(object sender, EventArgs e)
+        private void PopulateComboBoxes()
         {
-            ClearUserFields();
-        }
-        private void ClearUserFields()
-        {
+            try
+            {
+                DataTable u = new DataTable();
+                new MySqlDataAdapter("SELECT Username FROM users", conn).Fill(u);
+                comboBoxUser.DataSource = u; comboBoxUser.DisplayMember = "Username"; comboBoxUser.ValueMember = "Username";
 
-            textboxUsername.Clear();
-            textBoxPassword.Clear();
-            textBoxPriority.Clear();
-            usersGridView.ClearSelection();
+                DataTable f = new DataTable();
+                new MySqlDataAdapter("SELECT DISTINCT Priority FROM users", conn).Fill(f);
+                comboBoxFloor.DataSource = f; comboBoxFloor.DisplayMember = "Priority"; comboBoxFloor.ValueMember = "Priority";
+
+                comboBoxUser.SelectedIndex = -1; comboBoxFloor.SelectedIndex = -1;
+            }
+            catch { }
         }
+
+        private void kryptonLabel2_Click(object sender, EventArgs e) { }
+        private void kryptonTextBox1_TextChanged(object sender, EventArgs e) { }
+        private void kryptonLabel4_Click(object sender, EventArgs e) { }
+
         private void EditDatabase_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (conn?.State == ConnectionState.Open)
-            {
-                conn.Close();
-            }
+            if (conn?.State == ConnectionState.Open) conn.Close();
         }
     }
 }

@@ -28,6 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabDispensers = new System.Windows.Forms.TabPage();
             this.kryptonGroupBox1 = new Krypton.Toolkit.KryptonGroupBox();
@@ -44,6 +47,9 @@
             this.dispensersGridView = new Krypton.Toolkit.KryptonDataGridView();
             this.tabUsers = new System.Windows.Forms.TabPage();
             this.kryptonGroupBox2 = new Krypton.Toolkit.KryptonGroupBox();
+            this.kryptonLabel6 = new Krypton.Toolkit.KryptonLabel();
+            this.kryptonLabel5 = new Krypton.Toolkit.KryptonLabel();
+            this.kryptonLabel4 = new Krypton.Toolkit.KryptonLabel();
             this.textBoxPriority = new Krypton.Toolkit.KryptonTextBox();
             this.textBoxPassword = new Krypton.Toolkit.KryptonTextBox();
             this.textboxUsername = new Krypton.Toolkit.KryptonTextBox();
@@ -52,9 +58,9 @@
             this.btnUpdateUser = new Krypton.Toolkit.KryptonButton();
             this.btnAddUser = new Krypton.Toolkit.KryptonButton();
             this.usersGridView = new Krypton.Toolkit.KryptonDataGridView();
-            this.kryptonLabel4 = new Krypton.Toolkit.KryptonLabel();
-            this.kryptonLabel5 = new Krypton.Toolkit.KryptonLabel();
-            this.kryptonLabel6 = new Krypton.Toolkit.KryptonLabel();
+            this.tabStatistics = new System.Windows.Forms.TabPage();
+            this.statsGridView = new Krypton.Toolkit.KryptonDataGridView();
+            this.usageChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tabControl1.SuspendLayout();
             this.tabDispensers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.kryptonGroupBox1)).BeginInit();
@@ -70,12 +76,16 @@
             this.kryptonGroupBox2.Panel.SuspendLayout();
             this.kryptonGroupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.usersGridView)).BeginInit();
+            this.tabStatistics.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.usageChart)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.tabDispensers);
             this.tabControl1.Controls.Add(this.tabUsers);
+            this.tabControl1.Controls.Add(this.tabStatistics);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
@@ -278,6 +288,37 @@
             this.kryptonGroupBox2.TabIndex = 1;
             this.kryptonGroupBox2.Values.Heading = "User details";
             // 
+            // kryptonLabel6
+            // 
+            this.kryptonLabel6.AutoSize = false;
+            this.kryptonLabel6.Location = new System.Drawing.Point(41, 137);
+            this.kryptonLabel6.Name = "kryptonLabel6";
+            this.kryptonLabel6.Size = new System.Drawing.Size(74, 24);
+            this.kryptonLabel6.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel6.TabIndex = 16;
+            this.kryptonLabel6.Values.Text = "Floor:";
+            // 
+            // kryptonLabel5
+            // 
+            this.kryptonLabel5.AutoSize = false;
+            this.kryptonLabel5.Location = new System.Drawing.Point(4, 94);
+            this.kryptonLabel5.Name = "kryptonLabel5";
+            this.kryptonLabel5.Size = new System.Drawing.Size(114, 24);
+            this.kryptonLabel5.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel5.TabIndex = 15;
+            this.kryptonLabel5.Values.Text = "Password:";
+            // 
+            // kryptonLabel4
+            // 
+            this.kryptonLabel4.AutoSize = false;
+            this.kryptonLabel4.Location = new System.Drawing.Point(41, 52);
+            this.kryptonLabel4.Name = "kryptonLabel4";
+            this.kryptonLabel4.Size = new System.Drawing.Size(71, 22);
+            this.kryptonLabel4.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.kryptonLabel4.TabIndex = 14;
+            this.kryptonLabel4.Values.Text = "User:";
+            this.kryptonLabel4.Click += new System.EventHandler(this.kryptonLabel4_Click);
+            // 
             // textBoxPriority
             // 
             this.textBoxPriority.Location = new System.Drawing.Point(121, 137);
@@ -358,36 +399,48 @@
             this.usersGridView.Size = new System.Drawing.Size(533, 509);
             this.usersGridView.TabIndex = 0;
             // 
-            // kryptonLabel4
+            // tabStatistics
             // 
-            this.kryptonLabel4.AutoSize = false;
-            this.kryptonLabel4.Location = new System.Drawing.Point(41, 52);
-            this.kryptonLabel4.Name = "kryptonLabel4";
-            this.kryptonLabel4.Size = new System.Drawing.Size(71, 22);
-            this.kryptonLabel4.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.kryptonLabel4.TabIndex = 14;
-            this.kryptonLabel4.Values.Text = "User:";
-            this.kryptonLabel4.Click += new System.EventHandler(this.kryptonLabel4_Click);
+            this.tabStatistics.Controls.Add(this.usageChart);
+            this.tabStatistics.Controls.Add(this.statsGridView);
+            this.tabStatistics.Location = new System.Drawing.Point(4, 33);
+            this.tabStatistics.Name = "tabStatistics";
+            this.tabStatistics.Padding = new System.Windows.Forms.Padding(3);
+            this.tabStatistics.Size = new System.Drawing.Size(1059, 517);
+            this.tabStatistics.TabIndex = 2;
+            this.tabStatistics.Text = "Statistics";
+            this.tabStatistics.UseVisualStyleBackColor = true;
             // 
-            // kryptonLabel5
+            // statsGridView
             // 
-            this.kryptonLabel5.AutoSize = false;
-            this.kryptonLabel5.Location = new System.Drawing.Point(4, 94);
-            this.kryptonLabel5.Name = "kryptonLabel5";
-            this.kryptonLabel5.Size = new System.Drawing.Size(114, 24);
-            this.kryptonLabel5.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.kryptonLabel5.TabIndex = 15;
-            this.kryptonLabel5.Values.Text = "Password:";
+            this.statsGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.statsGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.statsGridView.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.statsGridView.Location = new System.Drawing.Point(3, 259);
+            this.statsGridView.Name = "statsGridView";
+            this.statsGridView.RowHeadersWidth = 51;
+            this.statsGridView.RowTemplate.Height = 24;
+            this.statsGridView.Size = new System.Drawing.Size(1053, 255);
+            this.statsGridView.TabIndex = 0;
             // 
-            // kryptonLabel6
+            // usageChart
             // 
-            this.kryptonLabel6.AutoSize = false;
-            this.kryptonLabel6.Location = new System.Drawing.Point(41, 137);
-            this.kryptonLabel6.Name = "kryptonLabel6";
-            this.kryptonLabel6.Size = new System.Drawing.Size(74, 24);
-            this.kryptonLabel6.StateCommon.ShortText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.kryptonLabel6.TabIndex = 16;
-            this.kryptonLabel6.Values.Text = "Floor:";
+            this.usageChart.BackColor = System.Drawing.Color.Navy;
+            this.usageChart.BorderlineColor = System.Drawing.Color.RoyalBlue;
+            chartArea1.Name = "ChartArea1";
+            this.usageChart.ChartAreas.Add(chartArea1);
+            this.usageChart.Dock = System.Windows.Forms.DockStyle.Fill;
+            legend1.Name = "Legend1";
+            this.usageChart.Legends.Add(legend1);
+            this.usageChart.Location = new System.Drawing.Point(3, 3);
+            this.usageChart.Name = "usageChart";
+            series1.ChartArea = "ChartArea1";
+            series1.Legend = "Legend1";
+            series1.Name = "Series1";
+            this.usageChart.Series.Add(series1);
+            this.usageChart.Size = new System.Drawing.Size(1053, 256);
+            this.usageChart.TabIndex = 1;
+            this.usageChart.Text = "chart1";
             // 
             // EditDispensers
             // 
@@ -415,6 +468,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.kryptonGroupBox2)).EndInit();
             this.kryptonGroupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.usersGridView)).EndInit();
+            this.tabStatistics.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.statsGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.usageChart)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -448,5 +504,8 @@
         private Krypton.Toolkit.KryptonLabel kryptonLabel4;
         private Krypton.Toolkit.KryptonLabel kryptonLabel6;
         private Krypton.Toolkit.KryptonLabel kryptonLabel5;
+        private System.Windows.Forms.TabPage tabStatistics;
+        private Krypton.Toolkit.KryptonDataGridView statsGridView;
+        private System.Windows.Forms.DataVisualization.Charting.Chart usageChart;
     }
 }
